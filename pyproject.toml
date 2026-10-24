@@ -22,3 +22,22 @@ project = "langgraph_lab.main:main"
 [build-system]
 requires = ["uv_build>=0.12.11,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.2",
+]
+
+[tool.ruff]
+target-version = "py314"
+# Стенд mini_repo — данные курса: его строки и импорты считают примеры уроков.
+extend-exclude = ["src/langgraph_lab/examples/mini_repo"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ANN"]
+# Длину строк держит ruff format; длинные строковые литералы он не режет.
+ignore = ["E501"]
+
+[tool.ruff.lint.flake8-annotations]
+# **kwargs курса уходят в init_chat_model как есть, у них разные типы.
+allow-star-arg-any = true

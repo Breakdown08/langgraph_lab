@@ -16,12 +16,12 @@ from langchain.chat_models import BaseChatModel, init_chat_model
 load_dotenv()
 
 
-def gateway_kwargs() -> dict:
+def gateway_kwargs() -> dict[str, str]:
     """Возвращает аргументы доступа к шлюзу, совместимому с OpenAI.
 
     Нужны примерам, которые вызывают init_chat_model сами.
     """
-    base_url = os.getenv("MODEL_BASE_URL")
+    base_url: str | None = os.getenv("MODEL_BASE_URL")
 
     if base_url:
         return {
@@ -39,10 +39,10 @@ def build_model(model_name: str | None = None, **kwargs: Any) -> BaseChatModel:
     model_name без значения означает модель из MODEL_NAME. Остальные именованные
     аргументы уходят в init_chat_model как есть: temperature, max_tokens и прочее.
     """
-    model_name = model_name or os.environ["MODEL_NAME"]
-    access = gateway_kwargs()
+    name: str = model_name or os.environ["MODEL_NAME"]
+    access: dict[str, str] = gateway_kwargs()
 
     if access:
-        return init_chat_model(model=model_name, **access, **kwargs)
+        return init_chat_model(model=name, **access, **kwargs)
 
-    return init_chat_model(model_name, **kwargs)
+    return init_chat_model(name, **kwargs)
