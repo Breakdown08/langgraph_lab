@@ -221,3 +221,6 @@ __marimo__/
 
 # LangGraph: схема графа из примеров
 graph.png
+
+# Журнал работы с Claude: свой у каждого, см. CLAUDE.md
+JOURNAL.md
