@@ -7,37 +7,44 @@
 """
 
 from pathlib import Path
+from typing import NotRequired
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import StreamPart
 from typing_extensions import TypedDict
 
-REPO = Path(__file__).parent / "mini_repo"
+REPO: Path = Path(__file__).parent / "mini_repo"
 
 
+# На входе есть только root; остальные ключи дописывают узлы по ходу запуска.
 class RepoState(TypedDict):
     root: str
-    files: list[str]
-    total_lines: int
-    imports: list[str]
-    card: str
+    files: NotRequired[list[str]]
+    total_lines: NotRequired[int]
+    imports: NotRequired[list[str]]
+    card: NotRequired[str]
 
 
-def collect_files(state: RepoState) -> dict:
-    names = sorted(path.name for path in Path(state["root"]).glob("*.py"))
+def collect_files(state: RepoState) -> dict[str, list[str]]:
+    names: list[str] = sorted(path.name for path in Path(state["root"]).glob("*.py"))
     return {"files": names}
 
 
-def count_lines(state: RepoState) -> dict:
-    root = Path(state["root"])
-    total = 0
+def count_lines(state: RepoState) -> dict[str, int]:
+    root: Path = Path(state["root"])
+    total: int = 0
+    name: str
     for name in state["files"]:
         total += len((root / name).read_text(encoding="utf-8").splitlines())
     return {"total_lines": total}
 
 
-def collect_imports(state: RepoState) -> dict:
-    root = Path(state["root"])
-    found = set()
+def collect_imports(state: RepoState) -> dict[str, list[str]]:
+    root: Path = Path(state["root"])
+    found: set[str] = set()
+    name: str
+    line: str
     for name in state["files"]:
         for line in (root / name).read_text(encoding="utf-8").splitlines():
             if line.startswith("from ") or line.startswith("import "):
@@ -45,8 +52,8 @@ def collect_imports(state: RepoState) -> dict:
     return {"imports": sorted(found)}
 
 
-def make_card(state: RepoState) -> dict:
-    card = (
+def make_card(state: RepoState) -> dict[str, str]:
+    card: str = (
         f"файлов {len(state['files'])}, "
         f"строк {state['total_lines']}, "
         f"импортов {len(state['imports'])}"
@@ -54,9 +61,9 @@ def make_card(state: RepoState) -> dict:
     return {"card": card}
 
 
-def sequential() -> StateGraph:
+def sequential() -> StateGraph[RepoState]:
     """Четыре узла цепочкой: каждый ждёт предыдущего."""
-    builder = StateGraph(RepoState)
+    builder: StateGraph[RepoState] = StateGraph(RepoState)
     builder.add_node("collect_files", collect_files)
     builder.add_node("count_lines", count_lines)
     builder.add_node("collect_imports", collect_imports)
@@ -69,9 +76,9 @@ def sequential() -> StateGraph:
     return builder
 
 
-def parallel() -> StateGraph:
+def parallel() -> StateGraph[RepoState]:
     """Те же узлы, но счёт строк и разбор импортов стоят рядом."""
-    builder = StateGraph(RepoState)
+    builder: StateGraph[RepoState] = StateGraph(RepoState)
     builder.add_node("collect_files", collect_files)
     builder.add_node("count_lines", count_lines)
     builder.add_node("collect_imports", collect_imports)
@@ -85,13 +92,17 @@ def parallel() -> StateGraph:
     return builder
 
 
-def run(title: str, builder: StateGraph) -> None:
-    graph = builder.compile()
+def run(title: str, builder: StateGraph[RepoState]) -> None:
+    graph: CompiledStateGraph[RepoState] = builder.compile()
     print(title)
-    number = 0
+    number: int = 0
+    chunk: StreamPart[RepoState, RepoState]
     for chunk in graph.stream({"root": str(REPO)}, stream_mode="values", version="v2"):
+        # Режим один, values; проверка сужает тип снимка для проверки типов.
+        if chunk["type"] != "values":
+            continue
         number += 1
-        filled = sorted(key for key in chunk["data"] if key != "root")
+        filled: list[str] = sorted(key for key in chunk["data"] if key != "root")
         print(f"  снимок {number}: заполнены {filled}")
     print(f"  снимков всего: {number}")
 

@@ -7,38 +7,45 @@
 """
 
 from pathlib import Path
+from typing import Any, NotRequired
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import StreamPart
 from typing_extensions import TypedDict
 
-REPO = Path(__file__).parent / "mini_repo"
-PICTURE = Path(__file__).parent / "graph.png"
+REPO: Path = Path(__file__).parent / "mini_repo"
+PICTURE: Path = Path(__file__).parent / "graph.png"
 
 
+# На входе есть только root; остальные ключи дописывают узлы по ходу запуска.
 class RepoState(TypedDict):
     root: str
-    files: list[str]
-    total_lines: int
-    imports: list[str]
-    card: str
+    files: NotRequired[list[str]]
+    total_lines: NotRequired[int]
+    imports: NotRequired[list[str]]
+    card: NotRequired[str]
 
 
-def collect_files(state: RepoState) -> dict:
-    names = sorted(path.name for path in Path(state["root"]).glob("*.py"))
+def collect_files(state: RepoState) -> dict[str, list[str]]:
+    names: list[str] = sorted(path.name for path in Path(state["root"]).glob("*.py"))
     return {"files": names}
 
 
-def count_lines(state: RepoState) -> dict:
-    root = Path(state["root"])
-    total = 0
+def count_lines(state: RepoState) -> dict[str, int]:
+    root: Path = Path(state["root"])
+    total: int = 0
+    name: str
     for name in state["files"]:
         total += len((root / name).read_text(encoding="utf-8").splitlines())
     return {"total_lines": total}
 
 
-def collect_imports(state: RepoState) -> dict:
-    root = Path(state["root"])
-    found = set()
+def collect_imports(state: RepoState) -> dict[str, list[str]]:
+    root: Path = Path(state["root"])
+    found: set[str] = set()
+    name: str
+    line: str
     for name in state["files"]:
         for line in (root / name).read_text(encoding="utf-8").splitlines():
             if line.startswith("from ") or line.startswith("import "):
@@ -46,8 +53,8 @@ def collect_imports(state: RepoState) -> dict:
     return {"imports": sorted(found)}
 
 
-def make_card(state: RepoState) -> dict:
-    card = (
+def make_card(state: RepoState) -> dict[str, str]:
+    card: str = (
         f"файлов {len(state['files'])}, "
         f"строк {state['total_lines']}, "
         f"импортов {len(state['imports'])}"
@@ -55,7 +62,7 @@ def make_card(state: RepoState) -> dict:
     return {"card": card}
 
 
-builder = StateGraph(RepoState)
+builder: StateGraph[RepoState] = StateGraph(RepoState)
 builder.add_node("collect_files", collect_files)
 builder.add_node("count_lines", count_lines)
 builder.add_node("collect_imports", collect_imports)
@@ -67,8 +74,11 @@ builder.add_edge("count_lines", "make_card")
 builder.add_edge("collect_imports", "make_card")
 builder.add_edge("make_card", END)
 
-graph = builder.compile()
+graph: CompiledStateGraph[RepoState] = builder.compile()
 
+chunk: StreamPart[RepoState, RepoState]
+node: str
+update: dict[str, Any]
 for chunk in graph.stream(
     {"root": str(REPO)},
     stream_mode=["updates", "values"],

@@ -6,6 +6,7 @@
 """
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
 
 
@@ -13,28 +14,29 @@ class State(TypedDict):
     steps: list[str]
 
 
-def step_a(state: State) -> dict:
+def step_a(state: State) -> dict[str, list[str]]:
     return {"steps": state["steps"] + ["a"]}
 
 
-def step_b(state: State) -> dict:
+def step_b(state: State) -> dict[str, list[str]]:
     return {"steps": state["steps"] + ["b"]}
 
 
-def fresh() -> StateGraph:
+def fresh() -> StateGraph[State]:
     """Возвращает сборщик с двумя узлами и без единого ребра."""
-    builder = StateGraph(State)
+    builder: StateGraph[State] = StateGraph(State)
     builder.add_node("step_a", step_a)
     builder.add_node("step_b", step_b)
     return builder
 
 
 # 1. Запуск без компиляции.
-builder = fresh()
+builder: StateGraph[State] = fresh()
 builder.add_edge(START, "step_a")
 builder.add_edge("step_a", END)
 try:
-    builder.invoke({"steps": []})
+    # Ошибка здесь и есть урок: у сборщика нет invoke, проверка типов это видит.
+    builder.invoke({"steps": []})  # type: ignore[attr-defined]
 except AttributeError as error:
     print("1. без компиляции:", error)
 
@@ -59,7 +61,7 @@ except ValueError as error:
 builder = fresh()
 builder.add_edge(START, "step_a")
 builder.add_edge("step_a", END)
-graph = builder.compile()
+graph: CompiledStateGraph[State] = builder.compile()
 print("4. узел без рёбер, результат:", graph.invoke({"steps": []}))
 print("   узлы собранного графа:", sorted(graph.get_graph().nodes))
 

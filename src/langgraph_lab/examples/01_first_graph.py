@@ -6,44 +6,48 @@
 """
 
 from pathlib import Path
+from typing import Any, NotRequired
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
 
-REPO = Path(__file__).parent / "mini_repo"
+REPO: Path = Path(__file__).parent / "mini_repo"
 
 
+# На входе есть только root; остальные ключи дописывают узлы по ходу запуска.
 class RepoState(TypedDict):
     root: str
-    files: list[str]
-    total_lines: int
+    files: NotRequired[list[str]]
+    total_lines: NotRequired[int]
 
 
-def collect_files(state: RepoState) -> dict:
+def collect_files(state: RepoState) -> dict[str, list[str]]:
     """Собирает имена файлов Python в папке стенда."""
-    names = sorted(path.name for path in Path(state["root"]).glob("*.py"))
+    names: list[str] = sorted(path.name for path in Path(state["root"]).glob("*.py"))
     return {"files": names}
 
 
-def count_lines(state: RepoState) -> dict:
+def count_lines(state: RepoState) -> dict[str, int]:
     """Считает строки во всех собранных файлах."""
-    root = Path(state["root"])
-    total = 0
+    root: Path = Path(state["root"])
+    total: int = 0
+    name: str
     for name in state["files"]:
         total += len((root / name).read_text(encoding="utf-8").splitlines())
     return {"total_lines": total}
 
 
-builder = StateGraph(RepoState)
+builder: StateGraph[RepoState] = StateGraph(RepoState)
 builder.add_node("collect_files", collect_files)
 builder.add_node("count_lines", count_lines)
 builder.add_edge(START, "collect_files")
 builder.add_edge("collect_files", "count_lines")
 builder.add_edge("count_lines", END)
 
-graph = builder.compile()
+graph: CompiledStateGraph[RepoState] = builder.compile()
 
-result = graph.invoke({"root": str(REPO)})
+result: dict[str, Any] = graph.invoke({"root": str(REPO)})
 
 print("ТИП СОБРАННОГО ГРАФА:", type(graph).__name__)
 print("ФАЙЛЫ:", result["files"])
