@@ -25,6 +25,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "mypy>=2.4.0",
     "ruff>=0.17.2",
 ]
 
@@ -41,3 +42,10 @@ ignore = ["E501"]
 [tool.ruff.lint.flake8-annotations]
 # **kwargs курса уходят в init_chat_model как есть, у них разные типы.
 allow-star-arg-any = true
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["src"]
+# Стенд mini_repo — данные курса, его не типизируем (см. CLAUDE.md).
+exclude = ["src/langgraph_lab/examples/mini_repo/"]

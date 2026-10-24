@@ -8,7 +8,7 @@ load_dotenv() ищет файл .env, начиная с текущей папк�
 """
 
 import os
-from typing import Any
+from typing import Any, TypedDict
 
 from dotenv import load_dotenv
 from langchain.chat_models import BaseChatModel, init_chat_model
@@ -16,7 +16,15 @@ from langchain.chat_models import BaseChatModel, init_chat_model
 load_dotenv()
 
 
-def gateway_kwargs() -> dict[str, str]:
+class GatewayKwargs(TypedDict, total=False):
+    """Аргументы init_chat_model для шлюза, совместимого с OpenAI."""
+
+    model_provider: str
+    base_url: str
+    api_key: str
+
+
+def gateway_kwargs() -> GatewayKwargs:
     """Возвращает аргументы доступа к шлюзу, совместимому с OpenAI.
 
     Нужны примерам, которые вызывают init_chat_model сами.
@@ -40,9 +48,12 @@ def build_model(model_name: str | None = None, **kwargs: Any) -> BaseChatModel:
     аргументы уходят в init_chat_model как есть: temperature, max_tokens и прочее.
     """
     name: str = model_name or os.environ["MODEL_NAME"]
-    access: dict[str, str] = gateway_kwargs()
+    access: GatewayKwargs = gateway_kwargs()
+    model: BaseChatModel
 
     if access:
-        return init_chat_model(model=name, **access, **kwargs)
+        model = init_chat_model(model=name, **access, **kwargs)
+    else:
+        model = init_chat_model(name, **kwargs)
 
-    return init_chat_model(name, **kwargs)
+    return model
