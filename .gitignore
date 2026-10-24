@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# LangGraph: схема графа из примеров
+graph.png
