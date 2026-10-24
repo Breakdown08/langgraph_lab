@@ -1,0 +1,24 @@
+[project]
+name = "langgraph-lab"
+version = "0.1.0"
+description = "learning langgraph"
+authors = [
+    { name = "Breakdown08", email = "kirmish.dev@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "langchain[anthropic]==1.4.2",
+    "langchain-core==1.6.3",
+    "langgraph==1.2.16",
+    "langgraph-checkpoint==4.3.0",
+    "langgraph-checkpoint-sqlite==3.1.2",
+    "aiosqlite==0.22.1",
+    "python-dotenv==1.2.3",
+]
+
+[project.scripts]
+project = "langgraph_lab.main:main"
+
+[build-system]
+requires = ["uv_build>=0.12.11,<0.13.0"]
+build-backend = "uv_build"
