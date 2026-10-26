@@ -224,3 +224,6 @@ graph.png
 
 # Журнал работы с Claude: свой у каждого, см. CLAUDE.md
 JOURNAL.md
+
+# Отчёт практики урока 4 (repo_walk.py), пишется при каждом запуске
+src/langgraph_lab/report.md
