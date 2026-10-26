@@ -12,6 +12,7 @@ destinations, с подсказкой о переходах и без неё. Д
 
 from typing import Literal, NotRequired, Protocol
 
+from langchain_core.runnables.graph import Edge
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
@@ -53,6 +54,7 @@ def edges(builder: StateGraph[ScanState]) -> list[str]:
     """Возвращает рёбра собранного графа в том виде, в каком их строит схема."""
     graph: CompiledStateGraph[ScanState] = builder.compile()
     lines: list[str] = []
+    edge: Edge
     for edge in graph.get_graph().edges:
         lines.append(
             f"{edge.source} -> {edge.target}"
